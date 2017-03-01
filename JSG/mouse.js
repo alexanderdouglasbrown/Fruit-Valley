@@ -12,7 +12,6 @@ JSG.mouse = {
 document.addEventListener('touchmove', (e) => {
     e.preventDefault()
     JSG_getCursorPosition(e)
-    JSG.mouse.click = false
 })
 
 document.addEventListener('touchstart', (e) => {
@@ -32,10 +31,8 @@ document.addEventListener("mouseup", () => {
 
 document.addEventListener('touchend', (e) => {
     //Only trigger releaseFlag if the user didn't move when touching
-    if (JSG.mouse.click) {
         JSG.mouse.click = false
         JSG.mouse.internal.releaseFlag = true
-    }
 })
 
 document.addEventListener('touchcancel', (e) => { JSG.mouse.click = false })
