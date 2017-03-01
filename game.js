@@ -2,7 +2,7 @@ function game() {
     const ctx = JSG.context
 
     const tileSize = 120
-    const tileOffset = 180
+    const tileOffset = 420
 
     const backgroundImage = new Image()
     const backgroundTile = new Image()
@@ -19,7 +19,7 @@ function game() {
     }
 
     JSG.internal.load = function load() {
-        backgroundImage.src = "graphics/forestbackground.png"
+        backgroundImage.src = "graphics/moonbackground.png"
         backgroundTile.src = "graphics/tile.png"
         backgroundTile2.src = "graphics/tile2.png"
         fruits.src = "graphics/fruits.png"
