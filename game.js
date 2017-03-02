@@ -17,18 +17,32 @@ function game() {
     let isHolding = false
     let isLocked = false
 
-    let animationQueue = []
+    let animation = null
+    let firstSwap = true
+
+    let brokenTiles = false
+    let fallingTiles = []
 
     JSG.internal.initialize = function initialize() {
         puzzleArray = populateArray()
+
+        //Reshuffle any pieces that match
         while (scanForMatch()) {
             for (let i = 0; i < gridX; i++) {
                 for (let j = 0; j < gridY; j++) {
-                    if (puzzleArray[i][j] == 0)
-                        puzzleArray[i][j] = getRandomIntInclusive(1, 5)
+                    if (puzzleArray[i][j].fruit == 0) {
+                        let tempObject = {
+                            fruit: getRandomIntInclusive(1, 5),
+                            offsetX: 0,
+                            offsetY: 0
+                        }
+                        puzzleArray[i][j] = tempObject
+                    }
                 }
             }
         }
+
+        brokenTiles = false
     }
 
     JSG.internal.load = function load() {
@@ -39,35 +53,131 @@ function game() {
     }
 
     JSG.internal.update = function update(dt) {
+
         readClick()
-        playAnimations(dt)
+        swapAnimation(dt * 0.8)
+        handleBrokenTiles(dt * 1.4)
     }
 
-    function playAnimations(dt) {
-        if (animationQueue.length > 0) {
-            isLocked = true
-            for (let i = 0; i < animationQueue.length; i++) {
-                switch (animationQueue[i].type) {
-                    case "up":
-                        animationQueue[i].offsetY -= dt
-                        if (animationQueue[i].offsetY <= -tileSize) {
-                            animationQueue.splice(i, 1)
-                            i--
+    function handleBrokenTiles(dt) {
+        //TODO: Properly lock during this sequence
+
+
+        //Generate a list of tiles that should fall.
+        if (brokenTiles && fallingTiles.length == 0) {
+            for (let i = 0; i < gridX; i++) {
+                for (let j = 0; j < gridY - 1; j++) {
+                    if (puzzleArray[i][j].fruit != 0 && puzzleArray[i][j + 1].fruit == 0) {
+                        let coords = {
+                            x: i,
+                            y: j
                         }
-                        break
-                    default:
-                        animationQueue.splice(i, 1)
-                        i--
-                        break
+                        fallingTiles.push(coords)
+                    }
                 }
             }
-        } else
-            isLocked = false
+        }
+
+        if (fallingTiles.length > 0) {
+            for (let i = 0; i < fallingTiles.length; i++) {
+                puzzleArray[fallingTiles[i].x][fallingTiles[i].y].offsetY += dt
+                if (puzzleArray[fallingTiles[i].x][fallingTiles[i].y].offsetY >= 120) {
+                    puzzleArray[fallingTiles[i].x][fallingTiles[i].y].offsetY = 0
+
+                    //Swap
+                    let temp = puzzleArray[fallingTiles[i].x][fallingTiles[i].y + 1].fruit
+                    puzzleArray[fallingTiles[i].x][fallingTiles[i].y + 1].fruit = puzzleArray[fallingTiles[i].x][fallingTiles[i].y].fruit
+                    puzzleArray[fallingTiles[i].x][fallingTiles[i].y].fruit = temp
+
+                    fallingTiles[i].y++
+                    if (fallingTiles[i].y < gridY - 1) {
+                        if (puzzleArray[fallingTiles[i].x][fallingTiles[i].y + 1].fruit != 0) {
+                            fallingTiles.splice(i, 1)
+                            i--
+                            scanForMatch()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    function swapAnimation(dt) {
+        if (animation != null) {
+            switch (animation) {
+                case "up":
+                    puzzleArray[tileSelected.x][tileSelected.y].offsetY -= dt
+                    puzzleArray[tileSelected2.x][tileSelected2.y].offsetY += dt
+                    if (puzzleArray[tileSelected.x][tileSelected.y].offsetY <= -tileSize) {
+                        puzzleArray[tileSelected.x][tileSelected.y].offsetY = 0
+                        puzzleArray[tileSelected2.x][tileSelected2.y].offsetY = 0
+                        swapTiles()
+                        if (!scanForMatch() && firstSwap) {
+                            animation = "up"
+                            firstSwap = false
+                        } else {
+                            firstSwap = true
+                            animation = null
+                        }
+                    }
+                    break
+                case "down":
+                    puzzleArray[tileSelected.x][tileSelected.y].offsetY += dt
+                    puzzleArray[tileSelected2.x][tileSelected2.y].offsetY -= dt
+                    if (puzzleArray[tileSelected.x][tileSelected.y].offsetY >= tileSize) {
+                        puzzleArray[tileSelected.x][tileSelected.y].offsetY = 0
+                        puzzleArray[tileSelected2.x][tileSelected2.y].offsetY = 0
+                        swapTiles()
+                        if (!scanForMatch() && firstSwap) {
+                            animation = "down"
+                            firstSwap = false
+                        } else {
+                            firstSwap = true
+                            animation = null
+                        }
+                    }
+                    break
+                case "right":
+                    puzzleArray[tileSelected.x][tileSelected.y].offsetX += dt
+                    puzzleArray[tileSelected2.x][tileSelected2.y].offsetX -= dt
+                    if (puzzleArray[tileSelected.x][tileSelected.y].offsetX >= tileSize) {
+                        puzzleArray[tileSelected.x][tileSelected.y].offsetX = 0
+                        puzzleArray[tileSelected2.x][tileSelected2.y].offsetX = 0
+                        swapTiles()
+                        if (!scanForMatch() && firstSwap) {
+                            animation = "right"
+                            firstSwap = false
+                        } else {
+                            firstSwap = true
+                            animation = null
+                        }
+                    }
+                    break
+                case "left":
+                    puzzleArray[tileSelected.x][tileSelected.y].offsetX -= dt
+                    puzzleArray[tileSelected2.x][tileSelected2.y].offsetX += dt
+                    if (puzzleArray[tileSelected.x][tileSelected.y].offsetX <= -tileSize) {
+                        puzzleArray[tileSelected.x][tileSelected.y].offsetX = 0
+                        puzzleArray[tileSelected2.x][tileSelected2.y].offsetX = 0
+                        swapTiles()
+                        if (!scanForMatch() && firstSwap) {
+                            animation = "left"
+                            firstSwap = false
+                        } else {
+                            firstSwap = true
+                            animation = null
+                        }
+                    }
+                    break
+                default:
+                    break
+            }
+        }
     }
 
     function readClick() {
         //Track tile of the initial click
-        if (JSG.mouse.click && !isHolding && !isLocked) {
+        if (JSG.mouse.click && !isHolding && !isLocked && animation == null) {
             for (let i = 0; i < gridX; i++) {
                 for (let j = 0; j < gridY; j++) {
                     if (boxCollision(JSG.mouse.x, JSG.mouse.y, 0, 0, tileOffset + (tileSize * i), tileSize * j, tileSize, tileSize)) {
@@ -92,7 +202,7 @@ function game() {
                         y: tileSelected.y - 1
                     }
                     isLocked = true
-                    swapTiles("up")
+                    animation = "up"
                     return
                 }
             //Down
@@ -103,7 +213,7 @@ function game() {
                         y: tileSelected.y + 1
                     }
                     isLocked = true
-                    swapTiles("down")
+                    animation = "down"
                     return
                 }
             //Right
@@ -114,7 +224,7 @@ function game() {
                         y: tileSelected.y
                     }
                     isLocked = true
-                    swapTiles("right")
+                    animation = "right"
                     return
                 }
             //Left
@@ -125,59 +235,21 @@ function game() {
                         y: tileSelected.y
                     }
                     isLocked = true
-                    swapTiles("left")
+                    animation = "left"
                     return
                 }
         }
 
         if (JSG.mouse.release) {
             isHolding = false
+            isLocked = false
         }
     }
 
-    function swapTiles(direction) {
-        let tempFruit = puzzleArray[tileSelected.x][tileSelected.y]
-        puzzleArray[tileSelected.x][tileSelected.y] = puzzleArray[tileSelected2.x][tileSelected2.y]
-        puzzleArray[tileSelected2.x][tileSelected2.y] = tempFruit
-        if (!scanForMatch()) {
-            tempFruit = puzzleArray[tileSelected.x][tileSelected.y]
-            puzzleArray[tileSelected.x][tileSelected.y] = puzzleArray[tileSelected2.x][tileSelected2.y]
-            puzzleArray[tileSelected2.x][tileSelected2.y] = tempFruit
-            //Send animations
-            let animationObject = {
-                type: direction + "andmiss",
-                fruit: 1,
-                x: tileSelected.x,
-                y: tileSelected.y,
-                offsetX: 0,
-                offsetY: 0
-            }
-            animationQueue.push(animationObject)
-            // animationObject = {
-            //     type: direction + "andmiss",
-            //     fruit: 1,
-            //     offsetX: 0,
-            //     offsetY: 0
-            // }
-            // animationQueue.push(animationObject)
-        } else {
-            let animationObject = {
-                type: direction,
-                fruit: 1,
-                x: tileSelected.x,
-                y: tileSelected.y,
-                offsetX: 0,
-                offsetY: 0
-            }
-            animationQueue.push(animationObject)
-            // animationObject = {
-            //     type: direction,
-            //     fruit: 1,
-            //     offsetX: 0,
-            //     offsetY: 0
-            // }
-            // animationQueue.push(animationObject)
-        }
+    function swapTiles() {
+        let tempFruit = puzzleArray[tileSelected.x][tileSelected.y].fruit
+        puzzleArray[tileSelected.x][tileSelected.y].fruit = puzzleArray[tileSelected2.x][tileSelected2.y].fruit
+        puzzleArray[tileSelected2.x][tileSelected2.y].fruit = tempFruit
     }
 
     function scanForMatch() {
@@ -192,7 +264,7 @@ function game() {
                 let lastFruit = {
                     x: i,
                     y: j,
-                    fruit: puzzleArray[i][j]
+                    fruit: puzzleArray[i][j].fruit
                 }
 
                 if (repeatedFruits.length > 0)
@@ -223,7 +295,7 @@ function game() {
                 let lastFruit = {
                     y: i,
                     x: j,
-                    fruit: puzzleArray[j][i]
+                    fruit: puzzleArray[j][i].fruit
                 }
 
                 if (repeatedFruits.length > 0)
@@ -247,8 +319,9 @@ function game() {
 
         if (markedForDeath.length > 0) {
             isMatchFound = true
+            brokenTiles = true
             for (let i = 0; i < markedForDeath.length; i++)
-                puzzleArray[markedForDeath[i].x][markedForDeath[i].y] = 0
+                puzzleArray[markedForDeath[i].x][markedForDeath[i].y].fruit = 0
         }
 
         return isMatchFound
@@ -264,20 +337,20 @@ function game() {
         //Puzzle grid
         for (let i = 0; i < gridX; i++) {
             for (let j = 0; j < gridY; j++) {
-                //Background tile
-
                 if ((i + j) % 2 == 0)
                     ctx.drawImage(backgroundTile, tileOffset + (tileSize * i), tileSize * j)
                 else
                     ctx.drawImage(backgroundTile2, tileOffset + (tileSize * i), tileSize * j)
-                //Fruits
 
-                ctx.drawImage(fruits, puzzleArray[i][j] * tileSize, 0, tileSize, tileSize, tileOffset + (tileSize * i), tileSize * j, tileSize, tileSize)
 
-                //Draw from the animation queue
-                for (let k = 0; k < animationQueue.length; k++) {
-                    ctx.drawImage(fruits, animationQueue[k].fruit * tileSize, 0, tileSize, tileSize, animationQueue[k].offsetX + tileOffset + (tileSize * animationQueue[k].x), animationQueue[k].offsetY + tileSize * animationQueue[k].y, tileSize, tileSize)
-                }
+            }
+        }
+
+        //Draw fruits (two passes is necessary)
+        for (let i = 0; i < gridX; i++) {
+            for (let j = 0; j < gridY; j++) {
+                ctx.drawImage(fruits, puzzleArray[i][j].fruit * tileSize, 0, tileSize, tileSize, puzzleArray[i][j].offsetX + tileOffset + (tileSize * i), puzzleArray[i][j].offsetY + tileSize * j, tileSize, tileSize)
+
             }
         }
     }
@@ -291,11 +364,14 @@ function game() {
         for (let i = 0; i < gridX; i++) {
             tempGrid[i] = new Array(gridY)
             for (let j = 0; j < gridY; j++) {
-                tempGrid[i][j] = getRandomIntInclusive(1, 5)
+                let tempObject = {
+                    fruit: getRandomIntInclusive(1, 5),
+                    offsetX: 0,
+                    offsetY: 0
+                }
+                tempGrid[i][j] = tempObject
             }
         }
-
-
         return tempGrid
     }
 
