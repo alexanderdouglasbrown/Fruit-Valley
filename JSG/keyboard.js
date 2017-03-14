@@ -6,14 +6,14 @@ JSG.keyboard = {
 }
 
 document.addEventListener('keydown', (e) => {
-    const keyCode = event.which || event.keyCode
+    const keyCode = e.which || e.keyCode
     if (!JSG.keyboard.keyList.includes(keyCode)) {
         JSG.keyboard.keyList.push(keyCode)
     }
 })
 
 document.addEventListener('keyup', (e) => {
-    const keyCode = event.which || event.keyCode
+    const keyCode = e.which || e.keyCode
     const index = JSG.keyboard.keyList.indexOf(keyCode)
     if (index != -1)
         JSG.keyboard.keyList.splice(index, 1)

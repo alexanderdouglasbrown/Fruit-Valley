@@ -42,8 +42,8 @@ window.addEventListener('blur', () => { JSG.mouse.click = false })
 function JSG_getCursorPosition(e) {
     e = e || window.event
 
-    JSG.mouse.x = event.pageX - JSG.canvas.offsetLeft
-    JSG.mouse.y = event.pageY - JSG.canvas.offsetTop
+    JSG.mouse.x = e.pageX - JSG.canvas.offsetLeft
+    JSG.mouse.y = e.pageY - JSG.canvas.offsetTop
 
     if (JSG.mouse.x < 0)
         JSG.mouse.x = 0

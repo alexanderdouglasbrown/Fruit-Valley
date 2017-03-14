@@ -2,7 +2,7 @@ function game() {
     const ctx = JSG.context
 
     const tileSize = 120
-    const tileOffset = 480
+    const tileOffset = 360
     const gridX = 9
     const gridY = 9
 
@@ -23,6 +23,7 @@ function game() {
     let brokenTiles = false
     let fallingTiles = false
     let doneFalling = false
+    let acceleration = 1
 
     JSG.internal.initialize = function initialize() {
         puzzleArray = populateArray()
@@ -50,7 +51,7 @@ function game() {
     JSG.internal.update = function update(dt) {
         readClick()
         lockingAnimation(dt * 0.8)
-        handleBrokenTiles(dt)
+        handleBrokenTiles(dt * acceleration)
     }
 
     function handleBrokenTiles(fallSpeed) {
@@ -60,6 +61,9 @@ function game() {
             isHolding = false
 
             for (let i = 0; i < gridX; i++) {
+                if (puzzleArray[i][0].fruit == 0)
+                    puzzleArray[i][0] = getNewFruit()
+
                 for (let j = 0; j < gridY - 1; j++) {
                     if (puzzleArray[i][j].fruit != 0 && puzzleArray[i][j + 1].fruit == 0) {
                         puzzleArray[i][j].isFalling = true
@@ -73,11 +77,15 @@ function game() {
                 isLocked = true
             } else {
                 isLocked = false
-                scanForMatch()
+                acceleration = 1
+                if (scanForMatch()){
+                    //Keep score multiplier
+                }
             }
         }
 
         if (fallingTiles) {
+            acceleration += fallSpeed / 400
             for (let i = 0; i < gridX; i++) {
                 for (let j = gridY - 1; j >= 0; j--) {
                     //Animate until it its the bottom
