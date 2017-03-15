@@ -14,7 +14,10 @@ function game() {
 
     let score = 0
     let multiplier = 1
+    let lastScore = 0
+    let lastMultiplier = 1
     let time = maxTime
+    let scorePop = 0
 
     let puzzleArray = null
     let tileSelected = null
@@ -43,11 +46,14 @@ function game() {
         }
         animation = null
         score = 0
+        lastScore = 0
         multiplier = 1
+        lastMultiplier = 1
+        scorePop = 1000
     }
 
     JSG.internal.load = function load() {
-        backgroundImage.src = "graphics/moonbackground.png"
+        backgroundImage.src = "graphics/background.png"
         backgroundTile.src = "graphics/tile.png"
         backgroundTile2.src = "graphics/tile2.png"
         fruits.src = "graphics/fruits.png"
@@ -59,6 +65,9 @@ function game() {
         if (animation == null)
             handleBrokenTiles(dt * acceleration)
 
+        if (scorePop <= 1000)
+            scorePop += dt
+
         time -= dt
         if (time <= 0) {
             //Handle end of game
@@ -68,7 +77,9 @@ function game() {
     }
 
     function addScore(explodeCount) {
-        score += Math.floor(Math.pow(5, 1 + (explodeCount / 5))) * multiplier
+        lastScore = Math.floor(Math.pow(5, 1 + (explodeCount / 5)))
+        lastMultiplier = multiplier
+        score += lastScore * lastMultiplier
     }
 
     function handleBrokenTiles(fallSpeed) {
@@ -96,6 +107,7 @@ function game() {
                 acceleration = 1
                 if (scanForMatch()) {
                     multiplier += 1
+                    scorePop = 0
                 } else {
                     multiplier = 1
                     fallstate = 0
@@ -424,12 +436,24 @@ function game() {
 
         //UI
         ctx.font = "50px Verdana"
-        ctx.fillText("Score", 50, 80)
-        ctx.fillText(score, 50, 150)
+        ctx.fillText("Score", 50, 680)
+        ctx.fillText(score, 50, 750)
 
-        ctx.fillText("Time", 50, 300)
+        ctx.fillText("Time", 50, 900)
+        ctx.fillStyle = "darkred"
+        ctx.fillRect(50, 920, 270, 40)
         ctx.fillStyle = "red"
-        ctx.fillRect(50, 320, (270 * time / maxTime), 50)
+        ctx.fillRect(50, 920, (270 * time / maxTime), 40)
+
+        if (scorePop > 0 && scorePop <= 700) {
+            let scoreSize = 40 + scorePop / 10
+            if (scoreSize > 55)
+                scoreSize = 55
+
+            ctx.fillStyle = "lightblue"
+            ctx.font = scoreSize + "px Verdana"
+            ctx.fillText(lastScore + " x" + lastMultiplier + "!", 100, 825)
+        }
     }
 
 

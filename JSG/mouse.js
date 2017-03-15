@@ -30,9 +30,8 @@ document.addEventListener("mouseup", () => {
 })
 
 document.addEventListener('touchend', (e) => {
-    //Only trigger releaseFlag if the user didn't move when touching
-        JSG.mouse.click = false
-        JSG.mouse.internal.releaseFlag = true
+    JSG.mouse.click = false
+    JSG.mouse.internal.releaseFlag = true
 })
 
 document.addEventListener('touchcancel', (e) => { JSG.mouse.click = false })
