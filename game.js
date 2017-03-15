@@ -5,11 +5,16 @@ function game() {
     const tileOffset = 360
     const gridX = 9
     const gridY = 9
+    const maxTime = 120000 //ms
 
     const backgroundImage = new Image()
     const backgroundTile = new Image()
     const backgroundTile2 = new Image()
     const fruits = new Image()
+
+    let score = 0
+    let multiplier = 1
+    let time = maxTime
 
     let puzzleArray = null
     let tileSelected = null
@@ -20,9 +25,7 @@ function game() {
     let animation = null
     let firstSwap = true
 
-    let brokenTiles = false
-    let fallingTiles = false
-    let doneFalling = false
+    let fallstate = 0
     let acceleration = 1
 
     JSG.internal.initialize = function initialize() {
@@ -39,6 +42,8 @@ function game() {
             }
         }
         animation = null
+        score = 0
+        multiplier = 1
     }
 
     JSG.internal.load = function load() {
@@ -51,13 +56,25 @@ function game() {
     JSG.internal.update = function update(dt) {
         readClick()
         lockingAnimation(dt * 0.8)
-        handleBrokenTiles(dt * acceleration)
+        if (animation == null)
+            handleBrokenTiles(dt * acceleration)
+
+        time -= dt
+        if (time <= 0) {
+            //Handle end of game
+            isLocked = true
+            time = 0
+        }
+    }
+
+    function addScore(explodeCount) {
+        score += Math.floor(Math.pow(5, 1 + (explodeCount / 5))) * multiplier
     }
 
     function handleBrokenTiles(fallSpeed) {
         //See which tiles should fall
-        if (brokenTiles) {
-            brokenTiles = false
+        if (fallstate == 1) {
+            fallstate = 0
             isHolding = false
 
             for (let i = 0; i < gridX; i++) {
@@ -67,24 +84,27 @@ function game() {
                 for (let j = 0; j < gridY - 1; j++) {
                     if (puzzleArray[i][j].fruit != 0 && puzzleArray[i][j + 1].fruit == 0) {
                         puzzleArray[i][j].isFalling = true
-                        fallingTiles = true
+                        fallstate = 2
                         for (let k = j; k >= 0; k--)
                             puzzleArray[i][k].isFalling = true
                     }
                 }
             }
-            if (fallingTiles) {
+            if (fallstate == 2) {
                 isLocked = true
             } else {
-                isLocked = false
                 acceleration = 1
-                if (scanForMatch()){
-                    //Keep score multiplier
+                if (scanForMatch()) {
+                    multiplier += 1
+                } else {
+                    multiplier = 1
+                    fallstate = 0
+                    isLocked = false
                 }
             }
         }
 
-        if (fallingTiles) {
+        if (fallstate == 2) {
             acceleration += fallSpeed / 400
             for (let i = 0; i < gridX; i++) {
                 for (let j = gridY - 1; j >= 0; j--) {
@@ -100,18 +120,15 @@ function game() {
 
                             puzzleArray[i][j] = puzzleArray[i][j + 1]
                             puzzleArray[i][j + 1] = temp
-
-                            fallingTiles = false
-                            doneFalling = true
+                            fallstate = 3
                         }
                     }
                 }
             }
         }
 
-        if (doneFalling) {
-            brokenTiles = true
-            doneFalling = false
+        if (fallstate == 3) {
+            fallstate = 1
 
             for (let i = 0; i < gridX; i++) {
                 for (let j = 0; j < gridY; j++) {
@@ -132,7 +149,7 @@ function game() {
                         puzzleArray[tileSelected.x][tileSelected.y].offsetY = 0
                         puzzleArray[tileSelected2.x][tileSelected2.y].offsetY = 0
                         swapTiles()
-                        if (!scanForMatch() && firstSwap) {
+                        if (firstSwap && !scanForMatch()) {
                             animation = "up"
                             firstSwap = false
                         } else {
@@ -148,7 +165,7 @@ function game() {
                         puzzleArray[tileSelected.x][tileSelected.y].offsetY = 0
                         puzzleArray[tileSelected2.x][tileSelected2.y].offsetY = 0
                         swapTiles()
-                        if (!scanForMatch() && firstSwap) {
+                        if (firstSwap && !scanForMatch()) {
                             animation = "down"
                             firstSwap = false
                         } else {
@@ -164,7 +181,7 @@ function game() {
                         puzzleArray[tileSelected.x][tileSelected.y].offsetX = 0
                         puzzleArray[tileSelected2.x][tileSelected2.y].offsetX = 0
                         swapTiles()
-                        if (!scanForMatch() && firstSwap) {
+                        if (firstSwap && !scanForMatch()) {
                             animation = "right"
                             firstSwap = false
                         } else {
@@ -180,7 +197,7 @@ function game() {
                         puzzleArray[tileSelected.x][tileSelected.y].offsetX = 0
                         puzzleArray[tileSelected2.x][tileSelected2.y].offsetX = 0
                         swapTiles()
-                        if (!scanForMatch() && firstSwap) {
+                        if (firstSwap && !scanForMatch()) {
                             animation = "left"
                             firstSwap = false
                         } else {
@@ -195,7 +212,7 @@ function game() {
                         for (let j = 0; j < gridY; j++) {
                             if (puzzleArray[i][j].isExploding) {
                                 puzzleArray[i][j].offsetZoom += animationSpeed / 1.2
-                                puzzleArray[i][j].alpha -= animationSpeed / 150
+                                puzzleArray[i][j].alpha -= animationSpeed / 170
                                 if (puzzleArray[i][j].alpha < 0) {
                                     puzzleArray[i][j].alpha = 1
                                     puzzleArray[i][j].offsetZoom = 0
@@ -292,6 +309,7 @@ function game() {
     function scanForMatch() {
         let isMatchFound = false
         let markedForDeath = []
+        let explodeCount = 0
 
         //Scan up and down
         for (let i = 0; i < gridX; i++) {
@@ -356,20 +374,28 @@ function game() {
 
         if (markedForDeath.length > 0) {
             isMatchFound = true
-            brokenTiles = true
+            fallstate = 1
             animation = "explode"
+
             for (let i = 0; i < markedForDeath.length; i++) {
-                puzzleArray[markedForDeath[i].x][markedForDeath[i].y].isExploding = true
+                if (puzzleArray[markedForDeath[i].x][markedForDeath[i].y].isExploding == false) { //Avoid duplicates
+                    puzzleArray[markedForDeath[i].x][markedForDeath[i].y].isExploding = true
+                    explodeCount += 1
+                }
             }
+
         }
+
+        if (explodeCount >= 1)
+            addScore(explodeCount)
 
         return isMatchFound
     }
 
     JSG.internal.draw = function draw() {
         //Clear
-        JSG.context.fillStyle = "white"
-        JSG.context.fillRect(0, 0, JSG.resolutionWidth, JSG.resolutionHeight)
+        ctx.fillStyle = "white"
+        ctx.fillRect(0, 0, JSG.resolutionWidth, JSG.resolutionHeight)
 
         ctx.drawImage(backgroundImage, 0, 0)
 
@@ -395,6 +421,15 @@ function game() {
                 ctx.globalAlpha = 1
             }
         }
+
+        //UI
+        ctx.font = "50px Verdana"
+        ctx.fillText("Score", 50, 80)
+        ctx.fillText(score, 50, 150)
+
+        ctx.fillText("Time", 50, 300)
+        ctx.fillStyle = "red"
+        ctx.fillRect(50, 320, (270 * time / maxTime), 50)
     }
 
 
