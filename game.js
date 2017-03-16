@@ -12,6 +12,9 @@ function game() {
     const backgroundTile2 = new Image()
     const fruits = new Image()
 
+    let gamestate = "load"
+    let loadArray = []
+
     let score = 0
     let multiplier = 1
     let lastScore = 0
@@ -32,45 +35,81 @@ function game() {
     let acceleration = 1
 
     JSG.internal.initialize = function initialize() {
-        puzzleArray = populateArray()
-
-        //Reshuffle any pieces that match
-        while (scanForMatch()) {
-            for (let i = 0; i < gridX; i++) {
-                for (let j = 0; j < gridY; j++) {
-                    if (puzzleArray[i][j].isExploding) {
-                        puzzleArray[i][j] = getNewFruit()
-                    }
-                }
-            }
-        }
-        animation = null
-        score = 0
-        lastScore = 0
-        multiplier = 1
-        lastMultiplier = 1
-        scorePop = 1000
-    }
-
-    JSG.internal.load = function load() {
         backgroundImage.src = "graphics/background.png"
+        loadArray.push(backgroundImage)
+
         backgroundTile.src = "graphics/tile.png"
+        loadArray.push(backgroundTile)
+
         backgroundTile2.src = "graphics/tile2.png"
+        loadArray.push(backgroundTile2)
+
         fruits.src = "graphics/fruits.png"
+        loadArray.push(fruits)
     }
 
     JSG.internal.update = function update(dt) {
-        readClick()
-        lockingAnimation(dt * 0.8)
-        if (animation == null)
-            handleBrokenTiles(dt * acceleration)
+        switch (gamestate) {
+            case "load":
+                if (checkIfLoaded())
+                    gamestate = "init"
+                break
+            case "menu":
 
-        if (scorePop <= 1000)
-            scorePop += dt
+                break
+            case "init":
+                puzzleArray = populateArray()
 
+                //Reshuffle any pieces that match
+                while (scanForMatch()) {
+                    for (let i = 0; i < gridX; i++) {
+                        for (let j = 0; j < gridY; j++) {
+                            if (puzzleArray[i][j].isExploding) {
+                                puzzleArray[i][j] = getNewFruit()
+                            }
+                        }
+                    }
+                }
+                animation = null
+                time = maxTime
+                score = 0
+                lastScore = 0
+                multiplier = 1
+                lastMultiplier = 1
+                scorePop = 1000
+
+                gamestate = "game"
+                break
+            case "game":
+                readClick()
+                lockingAnimation(dt * 0.8)
+                if (animation == null)
+                    handleBrokenTiles(dt * acceleration)
+
+                if (scorePop <= 1000)
+                    scorePop += dt
+
+                handleTimer(dt)
+                break
+            default:
+                break
+        }
+    }
+
+    function checkIfLoaded() {
+        let loaded = true
+        for (let i = 0; i < loadArray.length; i++) {
+            if (loadArray[i].complete == false) {
+                loaded = false
+            }
+        }
+
+        return loaded
+    }
+
+    function handleTimer(dt) {
         time -= dt
         if (time <= 0) {
-            //Handle end of game
             isLocked = true
             time = 0
         }
@@ -406,54 +445,70 @@ function game() {
 
     JSG.internal.draw = function draw() {
         //Clear
-        ctx.fillStyle = "white"
+        ctx.fillStyle = "black"
         ctx.fillRect(0, 0, JSG.resolutionWidth, JSG.resolutionHeight)
 
         ctx.drawImage(backgroundImage, 0, 0)
 
-        //Puzzle grid
-        for (let i = 0; i < gridX; i++) {
-            for (let j = 0; j < gridY; j++) {
-                if ((i + j) % 2 == 0)
-                    ctx.drawImage(backgroundTile, tileOffset + (tileSize * i), tileSize * j)
-                else
-                    ctx.drawImage(backgroundTile2, tileOffset + (tileSize * i), tileSize * j)
+        switch (gamestate) {
+            case "load":
+                ctx.fillStyle = "lightgray";
+                ctx.font = "34px Arial";
+                ctx.fillText("Loading...", 50, 50);
+                break
+            case "game":
+                //Puzzle grid
+                for (let i = 0; i < gridX; i++) {
+                    for (let j = 0; j < gridY; j++) {
+                        if ((i + j) % 2 == 0)
+                            ctx.drawImage(backgroundTile, tileOffset + (tileSize * i), tileSize * j)
+                        else
+                            ctx.drawImage(backgroundTile2, tileOffset + (tileSize * i), tileSize * j)
 
 
-            }
+                    }
+                }
+
+                //Draw fruits
+                for (let i = 0; i < gridX; i++) {
+                    for (let j = 0; j < gridY; j++) {
+                        ctx.globalAlpha = puzzleArray[i][j].alpha
+                        ctx.drawImage(fruits, puzzleArray[i][j].fruit * tileSize, 0, tileSize, tileSize,
+                            puzzleArray[i][j].offsetX + tileOffset + (tileSize * i) - (puzzleArray[i][j].offsetZoom / 2), puzzleArray[i][j].offsetY + tileSize * j - (puzzleArray[i][j].offsetZoom / 2),
+                            tileSize + puzzleArray[i][j].offsetZoom, tileSize + puzzleArray[i][j].offsetZoom)
+                        ctx.globalAlpha = 1
+                    }
+                }
+
+                //UI
+                ctx.fillStyle = "white"
+                ctx.font = "50px Verdana"
+                ctx.fillText("Score", 50, 680)
+                ctx.fillText(score, 50, 750)
+
+                ctx.fillText("Time", 50, 900)
+                ctx.fillStyle = "darkred"
+                ctx.fillRect(50, 920, 270, 40)
+                ctx.fillStyle = "red"
+                ctx.fillRect(50, 920, (270 * time / maxTime), 40)
+
+                if (scorePop > 0 && scorePop <= 700) {
+                    let scoreSize = 40 + scorePop / 10
+                    if (scoreSize > 55)
+                        scoreSize = 55
+
+                    ctx.fillStyle = "lightblue"
+                    ctx.font = scoreSize + "px Verdana"
+                    if (lastMultiplier > 1)
+                        ctx.fillText(lastScore + " x" + lastMultiplier + "!", 100, 825)
+                    else
+                        ctx.fillText(lastScore, 100, 825)
+                }
+            default:
+                break
         }
 
-        //Draw fruits
-        for (let i = 0; i < gridX; i++) {
-            for (let j = 0; j < gridY; j++) {
-                ctx.globalAlpha = puzzleArray[i][j].alpha
-                ctx.drawImage(fruits, puzzleArray[i][j].fruit * tileSize, 0, tileSize, tileSize,
-                    puzzleArray[i][j].offsetX + tileOffset + (tileSize * i) - (puzzleArray[i][j].offsetZoom / 2), puzzleArray[i][j].offsetY + tileSize * j - (puzzleArray[i][j].offsetZoom / 2),
-                    tileSize + puzzleArray[i][j].offsetZoom, tileSize + puzzleArray[i][j].offsetZoom)
-                ctx.globalAlpha = 1
-            }
-        }
 
-        //UI
-        ctx.font = "50px Verdana"
-        ctx.fillText("Score", 50, 680)
-        ctx.fillText(score, 50, 750)
-
-        ctx.fillText("Time", 50, 900)
-        ctx.fillStyle = "darkred"
-        ctx.fillRect(50, 920, 270, 40)
-        ctx.fillStyle = "red"
-        ctx.fillRect(50, 920, (270 * time / maxTime), 40)
-
-        if (scorePop > 0 && scorePop <= 700) {
-            let scoreSize = 40 + scorePop / 10
-            if (scoreSize > 55)
-                scoreSize = 55
-
-            ctx.fillStyle = "lightblue"
-            ctx.font = scoreSize + "px Verdana"
-            ctx.fillText(lastScore + " x" + lastMultiplier + "!", 100, 825)
-        }
     }
 
 
