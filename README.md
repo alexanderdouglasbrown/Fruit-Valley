@@ -1,3 +1,3 @@
 # Fruit Valley
 
-I'm making a puzzle game!
+A match-3 puzzle game built on another of my projects, JSGamework.
