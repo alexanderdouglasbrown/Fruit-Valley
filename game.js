@@ -23,6 +23,14 @@ const graphics = {
         alpha: 1
     },
 
+    go: {
+        image: new Image(),
+        x: 596,
+        y: 442,
+        pause: 0,
+        offsetX: 0
+    },
+
     timesup: {
         image: new Image(),
         x: 360,
@@ -63,6 +71,7 @@ let lastMultiplier = 1
 let scorePop = 0
 
 let time = maxTime
+let gameStarted = false
 
 let puzzleArray = null
 let tileSelected = null
@@ -112,6 +121,9 @@ function initialize() {
 
     graphics.ready.image.src = "graphics/ready.png"
     loadArray.push(graphics.ready.image)
+
+    graphics.go.image.src = "graphics/go.png"
+    loadArray.push(graphics.go.image)
 }
 
 function update(dt) {
@@ -152,15 +164,18 @@ function update(dt) {
             tileSelected2 = null
             isHolding = false
             isLocked = false
+            gameStarted = false
 
             graphics.timesup.zoom = -graphics.timesup.resolution
             graphics.ready.zoom = 1500
             graphics.ready.alpha = 1
+            graphics.go.offsetX = 0
+            graphics.go.pause = 0
 
             gameState = "game"
             break
         case "game":
-            if (animation != "ready")
+            if (gameStarted)
                 handleTimer(dt)
             readClick()
             lockingAnimation(dt * 0.8)
@@ -261,6 +276,9 @@ function draw(rm) {
                     graphics.ready.x - (graphics.ready.zoom / 2), graphics.ready.y - (graphics.ready.zoom / 2),
                     graphics.ready.resolution + graphics.ready.zoom, graphics.ready.resolution + graphics.ready.zoom)
                 JSG.context.globalAlpha = 1
+            }
+            if (animation == "go" && graphics.go.pause >= 200) {
+                JSG.context.drawImage(graphics.go.image, graphics.go.x + graphics.go.offsetX, graphics.go.y)
             }
 
         default:
@@ -463,9 +481,20 @@ function lockingAnimation(animationSpeed) {
                     graphics.ready.zoom = 0
                     graphics.ready.alpha -= animationSpeed * 0.002
                 }
-                if (graphics.ready.alpha < 0){
+                if (graphics.ready.alpha < 0) {
                     graphics.ready.alpha = 0
+                    animation = "go"
+                }
+                break
+            case "go":
+                if (graphics.go.pause < 500)
+                    graphics.go.pause += animationSpeed
+                else
+                    graphics.go.offsetX += animationSpeed * 3
+
+                if ((graphics.go.x + graphics.go.offsetX) >= 1440){
                     animation = null
+                    gameStarted = true
                 }
                 break
             default:
