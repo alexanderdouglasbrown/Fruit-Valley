@@ -14,12 +14,13 @@ const graphics = {
     logo: new Image(),
     logoSmall: new Image(),
 
-    retry: {
+    ready: {
         image: new Image(),
-        x: 20,
-        y: 300,
-        width: 314,
-        height: 105
+        x: 482,
+        y: 122,
+        resolution: 836,
+        zoom: 0,
+        alpha: 1
     },
 
     timesup: {
@@ -28,6 +29,14 @@ const graphics = {
         y: 0,
         resolution: 1080,
         zoom: 0,
+    },
+
+    retry: {
+        image: new Image(),
+        x: 20,
+        y: 300,
+        width: 314,
+        height: 105
     },
 
     start: {
@@ -100,6 +109,9 @@ function initialize() {
 
     graphics.start.image.src = "graphics/start.png"
     loadArray.push(graphics.start.image)
+
+    graphics.ready.image.src = "graphics/ready.png"
+    loadArray.push(graphics.ready.image)
 }
 
 function update(dt) {
@@ -126,7 +138,7 @@ function update(dt) {
                 }
             }
 
-            animation = null
+            animation = "ready"
             time = maxTime
             score = 0
             lastScore = 0
@@ -142,12 +154,14 @@ function update(dt) {
             isLocked = false
 
             graphics.timesup.zoom = -graphics.timesup.resolution
-
+            graphics.ready.zoom = 1500
+            graphics.ready.alpha = 1
 
             gameState = "game"
             break
         case "game":
-            handleTimer(dt)
+            if (animation != "ready")
+                handleTimer(dt)
             readClick()
             lockingAnimation(dt * 0.8)
 
@@ -240,6 +254,14 @@ function draw(rm) {
                 JSG.context.drawImage(graphics.timesup.image, 0, 0, graphics.timesup.resolution, graphics.timesup.resolution,
                     graphics.timesup.x - (graphics.timesup.zoom / 2), graphics.timesup.y - (graphics.timesup.zoom / 2),
                     graphics.timesup.resolution + graphics.timesup.zoom, graphics.timesup.resolution + graphics.timesup.zoom)
+
+            if (animation == "ready") {
+                JSG.context.globalAlpha = graphics.ready.alpha
+                JSG.context.drawImage(graphics.ready.image, 0, 0, graphics.ready.resolution, graphics.ready.resolution,
+                    graphics.ready.x - (graphics.ready.zoom / 2), graphics.ready.y - (graphics.ready.zoom / 2),
+                    graphics.ready.resolution + graphics.ready.zoom, graphics.ready.resolution + graphics.ready.zoom)
+                JSG.context.globalAlpha = 1
+            }
 
         default:
             break
@@ -429,8 +451,22 @@ function lockingAnimation(animationSpeed) {
                 }
                 break
             case "timesup":
-                if (graphics.timesup.zoom <= 0)
+                if (graphics.timesup.zoom < 0)
                     graphics.timesup.zoom += animationSpeed * 4.5
+                else
+                    graphics.timesup.zoom = 0
+                break
+            case "ready":
+                if (graphics.ready.zoom > 0) {
+                    graphics.ready.zoom -= animationSpeed * 4.5
+                } else {
+                    graphics.ready.zoom = 0
+                    graphics.ready.alpha -= animationSpeed * 0.002
+                }
+                if (graphics.ready.alpha < 0){
+                    graphics.ready.alpha = 0
+                    animation = null
+                }
                 break
             default:
                 break

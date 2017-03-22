@@ -38,7 +38,7 @@ const JSG = {
             JSG.internal.dt += frameTime - JSG.internal.lastFrameTime
             JSG.internal.lastFrameTime = frameTime
 
-            if (JSG.internal.dt >= 1000) // Prevent dt runaway
+            if (JSG.internal.dt > 1000) // Prevent dt runaway
                 JSG.internal.dt = 1000
 
             while (JSG.internal.dt > JSG.internal.frameRate) {
