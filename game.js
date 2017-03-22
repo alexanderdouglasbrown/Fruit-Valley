@@ -89,7 +89,7 @@ function initialize() {
     graphics.logo.src = "graphics/logo.png"
     loadArray.push(graphics.logo)
 
-    graphics.logoSmall.src = "graphics/logoSmall.png"
+    graphics.logoSmall.src = "graphics/logosmall.png"
     loadArray.push(graphics.logoSmall)
 
     graphics.retry.image.src = "graphics/retry.png"
