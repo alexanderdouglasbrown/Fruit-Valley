@@ -1,8 +1,9 @@
 const tileSize = 120
 const tileOffset = 360
 const gridX = 9
-const gridY = 9
+const gridY = gridX + 1
 const maxTime = 120000 //ms
+let numGraphics
 
 const graphics = {
     backgroundImage: new Image(),
@@ -124,6 +125,8 @@ function initialize() {
 
     graphics.go.image.src = "graphics/go.png"
     loadArray.push(graphics.go.image)
+
+    numGraphics = loadArray.length
 }
 
 function update(dt) {
@@ -177,6 +180,7 @@ function update(dt) {
         case "game":
             if (gameStarted)
                 handleTimer(dt)
+
             readClick()
             lockingAnimation(dt * 0.8)
 
@@ -200,7 +204,7 @@ function draw(rm) {
         case "load":
             JSG.context.fillStyle = "lightgray";
             JSG.context.font = "34px Arial";
-            JSG.context.fillText("Loading...", 50, 50);
+            JSG.context.fillText("Loading... (" + Math.floor(((numGraphics - loadArray.length) / numGraphics) * 100) + "%)", 50, 50);
             break
 
         case "menu":
@@ -230,7 +234,7 @@ function draw(rm) {
                 for (let j = 0; j < gridY; j++) {
                     JSG.context.globalAlpha = puzzleArray[i][j].alpha
                     JSG.context.drawImage(graphics.fruits, puzzleArray[i][j].fruit * tileSize, 0, tileSize, tileSize,
-                        puzzleArray[i][j].offsetX + tileOffset + (tileSize * i) - (puzzleArray[i][j].offsetZoom / 2), puzzleArray[i][j].offsetY + tileSize * j - (puzzleArray[i][j].offsetZoom / 2),
+                        puzzleArray[i][j].offsetX + tileOffset + (tileSize * i) - (puzzleArray[i][j].offsetZoom / 2), puzzleArray[i][j].offsetY - tileSize + tileSize * j - (puzzleArray[i][j].offsetZoom / 2),
                         tileSize + puzzleArray[i][j].offsetZoom, tileSize + puzzleArray[i][j].offsetZoom)
                     JSG.context.globalAlpha = 1
                 }
@@ -287,15 +291,14 @@ function draw(rm) {
 }
 
 function checkIfLoaded() {
-    let loaded = true
     for (let i = 0; i < loadArray.length; i++) {
-        if (loadArray[i].complete == false) {
-            loaded = false
-            break
+        if (loadArray[i].complete == true) {
+            loadArray.splice(i, 1)
+            i--
         }
     }
 
-    return loaded
+    return loadArray.length > 0 ? false : true
 }
 
 function handleTimer(dt) {
@@ -322,9 +325,11 @@ function handleBrokenTiles(fallSpeed) {
         isHolding = false
 
         for (let i = 0; i < gridX; i++) {
+            //Generate new fruit
             if (puzzleArray[i][0].fruit == 0)
                 puzzleArray[i][0] = getNewFruit()
 
+            //If there's no fruit below the current fruit, put it into a fall state
             for (let j = 0; j < gridY - 1; j++) {
                 if (puzzleArray[i][j].fruit != 0 && puzzleArray[i][j + 1].fruit == 0) {
                     puzzleArray[i][j].isFalling = true
@@ -334,6 +339,9 @@ function handleBrokenTiles(fallSpeed) {
                 }
             }
         }
+
+        //If a fruit is put into a fall state, prevent player input while it animates
+        //If not, check for a match
         if (fallState == 2) {
             isLocked = true
         } else {
@@ -349,14 +357,15 @@ function handleBrokenTiles(fallSpeed) {
         }
     }
 
+    //Animate the fruit falling
     if (fallState == 2) {
         acceleration += fallSpeed / 400
         for (let i = 0; i < gridX; i++) {
             for (let j = gridY - 1; j >= 0; j--) {
-                //Animate until it its the bottom
+                //Animate until it's at the bottom
                 if (puzzleArray[i][j].isFalling) {
                     puzzleArray[i][j].offsetY += fallSpeed
-                    if (puzzleArray[i][j].offsetY >= 120) {
+                    if (puzzleArray[i][j].offsetY >= tileSize) {
                         puzzleArray[i][j].offsetY = 0
 
                         //Swap
@@ -372,6 +381,7 @@ function handleBrokenTiles(fallSpeed) {
         }
     }
 
+    //Release animation when fruit hits bottom
     if (fallState == 3) {
         fallState = 1
 
@@ -492,7 +502,7 @@ function lockingAnimation(animationSpeed) {
                 else
                     graphics.go.offsetX += animationSpeed * 3
 
-                if ((graphics.go.x + graphics.go.offsetX) >= 1440){
+                if ((graphics.go.x + graphics.go.offsetX) >= 1440) {
                     animation = null
                     gameStarted = true
                 }
@@ -533,7 +543,7 @@ function readClick() {
     if (JSG.mouse.click && !isHolding && !isLocked && fallState == 0 && animation == null) {
         for (let i = 0; i < gridX; i++) {
             for (let j = 0; j < gridY; j++) {
-                if (boxCollision(JSG.mouse.x, JSG.mouse.y, 0, 0, tileOffset + (tileSize * i), tileSize * j, tileSize, tileSize)) {
+                if (boxCollision(JSG.mouse.x, JSG.mouse.y, 0, 0, tileOffset + (tileSize * i), -tileSize + (tileSize * j), tileSize, tileSize)) {
                     tileSelected = {
                         x: i,
                         y: j
@@ -549,7 +559,7 @@ function readClick() {
     if (isHolding && !isLocked) {
         //Up
         if (tileSelected.y != 0)
-            if (boxCollision(JSG.mouse.x, JSG.mouse.y, 0, 0, tileOffset + (tileSize * tileSelected.x), tileSize * (tileSelected.y - 1), tileSize, tileSize)) {
+            if (boxCollision(JSG.mouse.x, JSG.mouse.y, 0, 0, tileOffset + (tileSize * tileSelected.x), -tileSize + tileSize * (tileSelected.y - 1), tileSize, tileSize)) {
                 tileSelected2 = {
                     x: tileSelected.x,
                     y: tileSelected.y - 1
@@ -560,7 +570,7 @@ function readClick() {
             }
         //Down
         if (tileSelected.y != (gridY - 1))
-            if (boxCollision(JSG.mouse.x, JSG.mouse.y, 0, 0, tileOffset + (tileSize * tileSelected.x), tileSize * (tileSelected.y + 1), tileSize, tileSize)) {
+            if (boxCollision(JSG.mouse.x, JSG.mouse.y, 0, 0, tileOffset + (tileSize * tileSelected.x), -tileSize + tileSize * (tileSelected.y + 1), tileSize, tileSize)) {
                 tileSelected2 = {
                     x: tileSelected.x,
                     y: tileSelected.y + 1
@@ -571,7 +581,7 @@ function readClick() {
             }
         //Right
         if (tileSelected.x != (gridX - 1))
-            if (boxCollision(JSG.mouse.x, JSG.mouse.y, 0, 0, tileOffset + (tileSize * (tileSelected.x + 1)), tileSize * tileSelected.y, tileSize, tileSize)) {
+            if (boxCollision(JSG.mouse.x, JSG.mouse.y, 0, 0, tileOffset + (tileSize * (tileSelected.x + 1)), -tileSize + tileSize * tileSelected.y, tileSize, tileSize)) {
                 tileSelected2 = {
                     x: tileSelected.x + 1,
                     y: tileSelected.y
@@ -582,7 +592,7 @@ function readClick() {
             }
         //Left
         if (tileSelected.x != 0)
-            if (boxCollision(JSG.mouse.x, JSG.mouse.y, 0, 0, tileOffset + (tileSize * (tileSelected.x - 1)), tileSize * tileSelected.y, tileSize, tileSize)) {
+            if (boxCollision(JSG.mouse.x, JSG.mouse.y, 0, 0, tileOffset + (tileSize * (tileSelected.x - 1)), -tileSize + tileSize * tileSelected.y, tileSize, tileSize)) {
                 tileSelected2 = {
                     x: tileSelected.x - 1,
                     y: tileSelected.y
@@ -614,7 +624,7 @@ function scanForMatch() {
     for (let i = 0; i < gridX; i++) {
         let repeatedFruits = []
 
-        for (let j = 0; j < gridY; j++) {
+        for (let j = 1; j < gridY; j++) {
             let lastFruit = {
                 x: i,
                 y: j,
@@ -641,7 +651,7 @@ function scanForMatch() {
     }
 
     //Then read the other way
-    for (let i = 0; i < gridY; i++) {
+    for (let i = 1; i < gridY; i++) {
         let repeatedFruits = []
 
         for (let j = 0; j < gridX; j++) {
