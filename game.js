@@ -185,7 +185,7 @@ function update(dt) {
             lockingAnimation(dt * 0.8)
 
             if (animation == null)
-                handleBrokenTiles(dt * acceleration * 0.8)
+                handleBrokenTiles(dt * acceleration * 0.85)
 
             if (scorePop <= 1000)
                 scorePop += dt
@@ -366,7 +366,7 @@ function handleBrokenTiles(fallSpeed) {
                 if (puzzleArray[i][j].isFalling) {
                     puzzleArray[i][j].offsetY += fallSpeed
                     if (puzzleArray[i][j].offsetY >= tileSize) {
-                        puzzleArray[i][j].offsetY = 0
+                        puzzleArray[i][j].offsetY -= tileSize
 
                         //Swap
                         let temp = puzzleArray[i][j]
@@ -388,9 +388,9 @@ function handleBrokenTiles(fallSpeed) {
         for (let i = 0; i < gridX; i++) {
             for (let j = 0; j < gridY; j++) {
                 puzzleArray[i][j].isFalling = false
+                puzzleArray[i][j].offsetY = 0
             }
         }
-        handleBrokenTiles(fallSpeed)
     }
 }
 
