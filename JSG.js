@@ -22,26 +22,30 @@ const JSG = {
     },
 
     start: function (width, height, fps) {
+        JSG.internal.frameRate = 1000 / fps
+
         JSG.internal.createCanvas(width, height, fps)
+
         initialize()
+
         JSG.internal.mainLoop(0)
     },
 
     internal: {
         dt: 0,
-        frameRate: 1000 / 60,
+        frameRate: 0,
         lastFrameTime: 0,
 
-        //Thank you http://www.isaacsukin.com/news/2015/01/detailed-explanation-javascript-game-loops-and-timing
-
         mainLoop: function (frameTime) {
+            requestAnimationFrame(JSG.internal.mainLoop)
+
             JSG.internal.dt += frameTime - JSG.internal.lastFrameTime
             JSG.internal.lastFrameTime = frameTime
 
             if (JSG.internal.dt > 1000) // Prevent dt runaway
                 JSG.internal.dt = 1000
 
-            while (JSG.internal.dt > JSG.internal.frameRate) {
+            while (JSG.internal.dt >= JSG.internal.frameRate) {
                 //Fire mouse release for one frame only
                 if (JSG.mouse.internal.releaseFlag) {
                     JSG.mouse.internal.releaseFlag = false
@@ -53,11 +57,9 @@ const JSG = {
                 JSG.internal.dt -= JSG.internal.frameRate
             }
 
-            draw(JSG.internal.dt / JSG.internal.frameRate)
+            draw()
 
             JSG.mouse.release = false
-
-            requestAnimationFrame(JSG.internal.mainLoop)
         },
 
         createCanvas: function (width, height, fps) {

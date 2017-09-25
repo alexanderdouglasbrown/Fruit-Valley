@@ -185,7 +185,7 @@ function update(dt) {
             lockingAnimation(dt * 0.8)
 
             if (animation == null)
-                handleBrokenTiles(dt * acceleration)
+                handleBrokenTiles(dt * acceleration * 0.8)
 
             if (scorePop <= 1000)
                 scorePop += dt
@@ -195,7 +195,7 @@ function update(dt) {
     }
 }
 
-function draw(rm) {
+function draw() {
     //Clear
     JSG.context.fillStyle = "black"
     JSG.context.fillRect(0, 0, JSG.resolutionWidth, JSG.resolutionHeight)
@@ -390,6 +390,7 @@ function handleBrokenTiles(fallSpeed) {
                 puzzleArray[i][j].isFalling = false
             }
         }
+        handleBrokenTiles(fallSpeed)
     }
 }
 
