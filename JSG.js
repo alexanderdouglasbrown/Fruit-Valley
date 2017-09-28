@@ -22,30 +22,33 @@ const JSG = {
     },
 
     start: function (width, height, fps) {
-        JSG.internal.frameRate = 1000 / fps
+        JSG.internal.targetFrameTime = 1000 / fps
 
-        JSG.internal.createCanvas(width, height, fps)
+        JSG.internal.createCanvas(width, height)
 
         initialize()
 
-        JSG.internal.mainLoop(0)
+        if (fps != 0)
+            JSG.internal.mainLoop(0)
+        else
+            JSG.internal.mainLoopUnlocked(0)
     },
 
     internal: {
         dt: 0,
-        frameRate: 0,
-        lastFrameTime: 0,
+        targetFrameTime: 0,
+        lastTimeStamp: 0,
 
-        mainLoop: function (frameTime) {
+        mainLoop: function (timeStamp) {
             requestAnimationFrame(JSG.internal.mainLoop)
 
-            JSG.internal.dt += frameTime - JSG.internal.lastFrameTime
-            JSG.internal.lastFrameTime = frameTime
+            JSG.internal.dt += timeStamp - JSG.internal.lastTimeStamp
+            JSG.internal.lastTimeStamp = timeStamp
 
             if (JSG.internal.dt > 1000) // Prevent dt runaway
                 JSG.internal.dt = 1000
 
-            while (JSG.internal.dt >= JSG.internal.frameRate) {
+            while (JSG.internal.dt >= JSG.internal.targetFrameTime) {
                 //Fire mouse release for one frame only
                 if (JSG.mouse.internal.releaseFlag) {
                     JSG.mouse.internal.releaseFlag = false
@@ -53,20 +56,36 @@ const JSG = {
                 }
 
                 //Call update at a consistent rate
-                update(JSG.internal.frameRate)
-                JSG.internal.dt -= JSG.internal.frameRate
+                update(JSG.internal.targetFrameTime)
+                
+                JSG.internal.dt -= JSG.internal.targetFrameTime
+                JSG.mouse.release = false
             }
-
             draw()
-
-            JSG.mouse.release = false
         },
 
-        createCanvas: function (width, height, fps) {
+        mainLoopUnlocked: function (timeStamp) {
+            JSG.internal.dt = timeStamp - JSG.internal.lastTimeStamp
+            JSG.internal.lastTimeStamp = timeStamp
+
+            requestAnimationFrame(JSG.internal.mainLoopUnlocked)
+
+            //Fire mouse release for one frame only
+            if (JSG.mouse.internal.releaseFlag) {
+                JSG.mouse.internal.releaseFlag = false
+                JSG.mouse.release = true
+            }
+
+            update(JSG.internal.dt)
+
+            JSG.mouse.release = false
+
+            draw()
+        },
+
+        createCanvas: function (width, height) {
             JSG.resolutionWidth = width
             JSG.resolutionHeight = height
-            JSG.internal.frameRate = 1000 / fps
-
 
             JSG.canvas = document.createElement("canvas")
             document.body.insertBefore(JSG.canvas, document.body.childNodes[0])
