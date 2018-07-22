@@ -157,13 +157,13 @@ window.addEventListener('blur', () => { JSG.keyboard.keyList = [] })
 window.addEventListener('touchmove', (e) => {
     e.preventDefault()
     JSG.internal.getCursorPosition(e)
-})
+}, {passive: false})
 
 window.addEventListener('touchstart', (e) => {
     e.preventDefault()
     JSG.internal.getCursorPosition(e)
     JSG.mouse.click = true
-})
+}, {passive: false})
 
 window.addEventListener("mousemove", (e) => { JSG.internal.getCursorPosition(e) })
 
