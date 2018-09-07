@@ -21,7 +21,7 @@ const JSG = {
         internal: { releaseFlag: false }
     },
 
-    start: function (width, height, fps) {
+    start: (width, height, fps) => {
         JSG.internal.targetFrameTime = 1000 / fps
 
         JSG.internal.createCanvas(width, height)
@@ -39,7 +39,7 @@ const JSG = {
         targetFrameTime: 0,
         lastTimeStamp: 0,
 
-        mainLoop: function (timeStamp) {
+        mainLoop: (timeStamp) => {
             requestAnimationFrame(JSG.internal.mainLoop)
 
             JSG.internal.dt += timeStamp - JSG.internal.lastTimeStamp
@@ -64,7 +64,7 @@ const JSG = {
             draw()
         },
 
-        mainLoopUnlocked: function (timeStamp) {
+        mainLoopUnlocked: (timeStamp) => {
             JSG.internal.dt = timeStamp - JSG.internal.lastTimeStamp
             JSG.internal.lastTimeStamp = timeStamp
 
@@ -83,7 +83,7 @@ const JSG = {
             draw()
         },
 
-        createCanvas: function (width, height) {
+        createCanvas: (width, height) => {
             JSG.resolutionWidth = width
             JSG.resolutionHeight = height
 
@@ -93,7 +93,7 @@ const JSG = {
             JSG.internal.resizeCanvas()
         },
 
-        resizeCanvas: function () {
+        resizeCanvas: () => {
             if (window.innerHeight * (JSG.resolutionWidth / JSG.resolutionHeight) >= window.innerWidth) {
                 JSG.canvas.width = window.innerWidth
                 JSG.canvas.height = window.innerWidth * (JSG.resolutionHeight / JSG.resolutionWidth)
@@ -113,7 +113,7 @@ const JSG = {
             JSG.keyboard.keyList = []
         },
 
-        getCursorPosition: function (e) {
+        getCursorPosition: (e) => {
             e = e || window.event
 
             JSG.mouse.x = e.pageX - JSG.canvas.offsetLeft
@@ -135,8 +135,8 @@ const JSG = {
     }
 }
 
-window.addEventListener("resize", function () { JSG.internal.resizeCanvas() })
-window.addEventListener("orientationchange", function () { JSG.internal.resizeCanvas() })
+window.addEventListener("resize", () => { JSG.internal.resizeCanvas() })
+window.addEventListener("orientationchange", () => { JSG.internal.resizeCanvas() })
 
 window.addEventListener('keydown', (e) => {
     const keyCode = e.which || e.keyCode
